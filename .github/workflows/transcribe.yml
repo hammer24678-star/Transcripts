@@ -30,18 +30,17 @@ jobs:
       - name: Build Quran json
         run: python build_quran.py data/ARQURAN.TXT data/quran.json
       - name: Transcribe + align
-        env:
-          MODEL: ${{ github.event.inputs.model || 'tarteel-ai/whisper-base-ar-quran' }}
-          BEAMS: ${{ github.event.inputs.beams || '5' }}
         run: |
-          mkdir -p results; shopt -s nullglob
+          read MODEL BEAMS STRIDE < config/model.txt
+          TAG=$(basename "$MODEL")
+          mkdir -p "results/$TAG"; shopt -s nullglob
           ls audio/*.flac || { echo "no audio"; exit 1; }
           for f in audio/*.flac; do
             n=$(basename "$f" .flac)
-            python transcribe.py "$f" "results/$n.raw.json" "$MODEL" "$BEAMS"
-            python align.py "results/$n.raw.json" data/quran.json "results/$n.aligned.json"
+            python transcribe.py "$f" "results/$TAG/$n.raw.json" "$MODEL" "$BEAMS" "$STRIDE"
+            python align.py "results/$TAG/$n.raw.json" data/quran.json "results/$TAG/$n.aligned.json"
           done
       - name: Commit results
         run: |
           git config user.name "transcribe-bot"; git config user.email "bot@users.noreply.github.com"
-          git add results && git commit -m "Transcription results" && git push
+          git add results && git commit -m "Transcription results" && git pull --rebase -q origin main; git push

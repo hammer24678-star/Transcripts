@@ -4,7 +4,8 @@ import sys, json, re
 from transformers import pipeline, GenerationConfig
 audio, out, model = sys.argv[1], sys.argv[2], sys.argv[3]
 beams = int(sys.argv[4]) if len(sys.argv) > 4 else 1
-pipe = pipeline("automatic-speech-recognition", model=model, device=-1, chunk_length_s=30, stride_length_s=(6, 6))
+stride = float(sys.argv[5]) if len(sys.argv) > 5 else 6.0
+pipe = pipeline("automatic-speech-recognition", model=model, device=-1, chunk_length_s=30, stride_length_s=(stride, stride))
 gen = {"language": "arabic", "task": "transcribe", "num_beams": beams}
 def run(ts):
     return pipe(audio, return_timestamps=ts, generate_kwargs=gen)

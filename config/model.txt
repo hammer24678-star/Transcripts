@@ -1,0 +1,1 @@
+MaddoggProduction/whisper-l-v3-turbo-quran-lora-dataset-mix 3 3
