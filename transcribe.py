@@ -9,11 +9,16 @@ gen = {"language": "arabic", "task": "transcribe", "num_beams": beams}
 def run(ts):
     return pipe(audio, return_timestamps=ts, generate_kwargs=gen)
 mode = "word"
+def base_name(cfg):
+    d = cfg.d_model
+    return {384: "tiny", 512: "base", 768: "small", 1024: "medium"}.get(d, "large-v3" if getattr(cfg, "num_mel_bins", 80) == 128 else "large-v2")
+gc = pipe.model.generation_config
+if not getattr(gc, "no_timestamps_token_id", None) or not getattr(gc, "alignment_heads", None):
+    # old fine-tunes ship an incomplete generation config; the base checkpoint's one is token-compatible
+    ref = GenerationConfig.from_pretrained("openai/whisper-" + base_name(pipe.model.config))
+    pipe.model.generation_config = ref
+    print("using generation config from openai/whisper-" + base_name(pipe.model.config))
 try:
-    if not getattr(pipe.model.generation_config, "alignment_heads", None):
-        # older fine-tunes lack alignment heads; borrow the ones from the base checkpoint of the same size
-        size = "tiny" if "tiny" in model else "small" if "small" in model else "medium" if "medium" in model else "base"
-        pipe.model.generation_config.alignment_heads = GenerationConfig.from_pretrained(f"openai/whisper-{size}").alignment_heads
     res = run("word")
     words = [{"w": c["text"].strip(), "t0": c["timestamp"][0], "t1": c["timestamp"][1]} for c in res["chunks"] if c["text"].strip()]
 except Exception as e:

@@ -10,6 +10,9 @@ on:
         default: "5"
   push:
     paths: ["audio/**"]
+concurrency:
+  group: transcribe
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:
